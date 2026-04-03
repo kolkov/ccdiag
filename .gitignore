@@ -1,0 +1,29 @@
+# Local research, mirrors, versions — NOT for public repo
+local/
+
+# Claude Code project config
+.claude/
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.test
+*.out
+coverage.*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
