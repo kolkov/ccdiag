@@ -14,7 +14,7 @@ import (
 	"github.com/kolkov/ccdiag/internal/recover"
 )
 
-var version = "0.2.0"
+var version = "0.1.0"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "recover" {
