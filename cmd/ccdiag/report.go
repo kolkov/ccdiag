@@ -176,7 +176,7 @@ func printColored(ar *analyzer.Result, opts ReportOptions) {
 	if !opts.OrphansOnly {
 		// Header
 		fmt.Printf("%s%s╔══════════════════════════════════════════╗%s\n", bold, cyan, reset)
-		fmt.Printf("%s%s║     CCDIAG — Session Analysis Report     ║%s\n", bold, cyan, reset)
+		fmt.Printf("%s%s║      CCDIAG - Session Analysis Report    ║%s\n", bold, cyan, reset)
 		fmt.Printf("%s%s╚══════════════════════════════════════════╝%s\n", bold, cyan, reset)
 		fmt.Println()
 
@@ -521,7 +521,7 @@ func PrintScanSummary(results []*analyzer.Result, noColor bool) {
 	}
 
 	fmt.Printf("%s%s╔══════════════════════════════════════════╗%s\n", bold, cyan, reset)
-	fmt.Printf("%s%s║     CCDIAG — Multi-Session Scan          ║%s\n", bold, cyan, reset)
+	fmt.Printf("%s%s║      CCDIAG - Multi-Session Scan         ║%s\n", bold, cyan, reset)
 	fmt.Printf("%s%s╚══════════════════════════════════════════╝%s\n", bold, cyan, reset)
 	fmt.Println()
 

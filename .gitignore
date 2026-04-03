@@ -4,6 +4,9 @@ local/
 # Claude Code project config
 .claude/
 
+# Dev docs, kanban, research (private)
+docs/dev/
+
 # Binaries
 *.exe
 *.exe~

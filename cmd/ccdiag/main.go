@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -11,15 +12,31 @@ import (
 
 	"github.com/kolkov/ccdiag/internal/analyzer"
 	"github.com/kolkov/ccdiag/internal/parser"
+	"github.com/kolkov/ccdiag/internal/proxy"
 	"github.com/kolkov/ccdiag/internal/recover"
 )
 
-var version = "0.1.0"
+// Set via ldflags: go build -ldflags "-X main.version=v0.1.0 -X main.commit=abc1234 -X main.date=2026-04-03"
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "recover" {
-		runRecover(os.Args[2:])
-		return
+	// Handle subcommands before flag.Parse
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "recover":
+			runRecover(os.Args[2:])
+			return
+		case "proxy":
+			runProxy(os.Args[2:])
+			return
+		case "version":
+			printVersion()
+			return
+		}
 	}
 
 	scanAll := flag.Bool("scan-all", false, "Scan all sessions in ~/.claude/projects/")
@@ -33,7 +50,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("ccdiag v%s\n", version)
+		printVersion()
 		return
 	}
 
@@ -89,7 +106,9 @@ func main() {
 	if len(args) == 0 {
 		fmt.Fprintf(os.Stderr, "Usage: ccdiag [command] [flags] <session.jsonl>\n\n")
 		fmt.Fprintf(os.Stderr, "Commands:\n")
+		fmt.Fprintf(os.Stderr, "  proxy      Start reverse proxy for LLM API traffic logging\n")
 		fmt.Fprintf(os.Stderr, "  recover    Extract context from a session for handoff\n")
+		fmt.Fprintf(os.Stderr, "  version    Show version, commit, build date\n")
 		fmt.Fprintf(os.Stderr, "  (default)  Analyze session for tool call issues\n\n")
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
@@ -99,6 +118,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ccdiag recover session.jsonl\n")
 		fmt.Fprintf(os.Stderr, "  ccdiag recover --latest D:\\projects\\myproject\n")
 		fmt.Fprintf(os.Stderr, "  ccdiag recover --output full -o handoff.md session.jsonl\n")
+		fmt.Fprintf(os.Stderr, "  ccdiag proxy\n")
+		fmt.Fprintf(os.Stderr, "  ccdiag proxy --port 8080 --verbose\n")
+		fmt.Fprintf(os.Stderr, "  ccdiag proxy stats\n")
+		fmt.Fprintf(os.Stderr, "  ccdiag proxy stats --last 1h --cost\n")
 		os.Exit(1)
 	}
 
@@ -174,6 +197,41 @@ func runRecover(args []string) {
 	}
 }
 
+func runProxy(args []string) {
+	// Route subcommands first.
+	if len(args) > 0 && args[0] == "stats" {
+		runProxyStats(args[1:])
+		return
+	}
+
+	fs := flag.NewFlagSet("proxy", flag.ExitOnError)
+	port := fs.Int("port", 0, "Listen port (default 9119)")
+	upstream := fs.String("upstream", "", "Upstream API URL (default https://api.anthropic.com)")
+	verbose := fs.Bool("verbose", false, "Log every request to stderr")
+	logDir := fs.String("log-dir", "", "Directory for traffic.jsonl (default ~/.ccdiag/proxy)")
+	fs.Parse(args)
+
+	cfg := proxy.DefaultConfig()
+	if *port != 0 {
+		cfg.Port = *port
+	}
+	if *upstream != "" {
+		cfg.Upstream = *upstream
+	}
+	if *verbose {
+		cfg.Verbose = true
+	}
+	if *logDir != "" {
+		cfg.LogDir = *logDir
+	}
+
+	ctx := context.Background()
+	if err := proxy.Run(ctx, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "proxy error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func scanSessions(dir string, stuckThreshold time.Duration) ([]*analyzer.Result, error) {
 	var files []string
 
@@ -208,4 +266,14 @@ func scanSessions(dir string, stuckThreshold time.Duration) ([]*analyzer.Result,
 	})
 
 	return results, nil
+}
+
+func printVersion() {
+	fmt.Printf("ccdiag %s\n", version)
+	if commit != "none" {
+		fmt.Printf("  commit: %s\n", commit)
+	}
+	if date != "unknown" {
+		fmt.Printf("  built:  %s\n", date)
+	}
 }
